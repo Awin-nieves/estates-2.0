@@ -101,6 +101,29 @@ def test_ejemplo_momento_continuo_sobre_el_apoyo(viga_ejemplo):
     assert r1["M"][-1] == pytest.approx(r2["M"][0])
 
 
+# --- Ejemplo de tres tramos con peso propio (concreto 25x45 cm) ----------
+@pytest.fixture
+def viga_tres_tramos():
+    c28 = concreto(28)
+    s = seccion_rectangular("25x45 cm", 0.25, 0.45)
+    t1 = Tramo(4.0, c28, s, w=18.0)
+    t2 = Tramo(5.0, c28, s, w=18.0, puntuales=[(2.5, 35.0)])
+    t3 = Tramo(3.5, c28, s, w=18.0)
+    return VigaContinua([t1, t2, t3], ["articulado"] * 4).resolver()
+
+
+def test_tres_tramos_equilibrio_global(viga_tres_tramos):
+    carga_total = (sum(t.w_total * t.L for t in viga_tres_tramos.tramos)
+                   + 35.0)
+    assert viga_tres_tramos.R[0::2].sum() == pytest.approx(carga_total)
+
+
+def test_tres_tramos_momento_continuo_sobre_apoyos(viga_tres_tramos):
+    r1, r2, r3 = viga_tres_tramos.resultados
+    assert r1["M"][-1] == pytest.approx(r2["M"][0])
+    assert r2["M"][-1] == pytest.approx(r3["M"][0])
+
+
 # --- Validaciones de entrada ---------------------------------------------
 def test_mecanismo_lanza_error(mat, sec):
     viga = VigaContinua([Tramo(L, mat, sec, w=W)], ["articulado", "libre"])

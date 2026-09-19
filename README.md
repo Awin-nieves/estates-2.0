@@ -52,7 +52,9 @@ viga.resumen(limite_flecha=360)                    # reacciones y verificaciones
 viga.graficar(archivo="viga_continua.png")         # esquema y diagramas
 ```
 
-Ejemplo completo: `python examples/dos_tramos.py`.
+Ejemplos completos: `python examples/dos_tramos.py` y
+`python examples/tres_tramos.py` (viga continua de tres tramos, con carga
+puntual en el tramo central).
 
 **Apoyos** (uno por nudo): `"empotrado"`, `"articulado"` o `"libre"`.
 **Cargas nodales**: `VigaContinua(..., cargas_nodales={nudo: (P, M)})`, con P
@@ -106,7 +108,7 @@ estates-2.0/
 │   ├── secciones.py     # Seccion, seccion_rectangular(), seccion_circular()
 │   ├── vigas.py         # Tramo, VigaContinua
 │   └── graficos.py      # esquema y diagramas
-├── examples/dos_tramos.py
+├── examples/dos_tramos.py, tres_tramos.py
 ├── tests/
 ├── docs/img/
 └── pyproject.toml
