@@ -67,7 +67,8 @@ hacia abajo [kN] y M antihorario [kN·m].
 - M > 0 tracciona la fibra inferior (en el gráfico, el eje de M está
   invertido para dibujar M+ del lado de la tracción).
 - Las cargas se ingresan con **hacia abajo positivo**.
-- Unidades: kN, m, kPa (= kN/m²). Por ejemplo, E = 1.8·10⁷ kPa ≈ 18 GPa.
+- Unidades: kN, m, kPa (= kN/m²). Por ejemplo, para f'c = 21 MPa,
+  E = 4700·√21·1000 ≈ 2.15·10⁷ kPa ≈ 21.5 GPa.
 
 ## Verificación
 
@@ -96,7 +97,7 @@ Los 16 tests comparan el programa con soluciones analíticas:
   concreto reforzado.
 - Solo flexión y cortante en el plano vertical: sin carga axial ni torsión
   (J se calcula, pero no interviene).
-- Ec = 3900·√f'c (NSR-10 C.8.5.1) y el límite de flecha L/360 son valores
+- Ec = 4700·√f'c (NSR-10 C.8.5.1 / ACI 318) y el límite de flecha L/360 son valores
   típicos: verifícalos con la norma y el criterio que corresponda.
 
 ## Estructura del repositorio

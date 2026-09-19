@@ -24,14 +24,15 @@ class Material:
 def concreto(fc_mpa, nu=0.2, gamma=24.0):
     """Concreto de peso normal a partir de su resistencia f'c.
 
-    Usa Ec = 3900·sqrt(f'c) [MPa] (NSR-10 C.8.5.1). Verifica la expresión y
-    la rigidez efectiva (fisuración) que exija tu curso o norma.
+    Usa Ec = 4700·sqrt(f'c) [MPa] (NSR-10 C.8.5.1 / ACI 318, concreto de
+    peso normal). Verifica la expresión y la rigidez efectiva (fisuración)
+    que exija tu curso o norma.
 
     Args:
         fc_mpa: resistencia a compresión f'c [MPa].
         nu: relación de Poisson, para G = E / (2(1 + nu)).
         gamma: peso específico [kN/m³].
     """
-    E = 3900.0 * np.sqrt(fc_mpa) * 1000.0            # MPa -> kPa
+    E = 4700.0 * np.sqrt(fc_mpa) * 1000.0            # MPa -> kPa
     return Material(f"Concreto f'c={fc_mpa:g} MPa", E, E / (2 * (1 + nu)),
                     gamma)
