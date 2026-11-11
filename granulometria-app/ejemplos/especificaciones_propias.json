@@ -1,0 +1,15 @@
+[
+  {
+    "codigo": "EJEMPLO-PROPIA",
+    "nombre": "EJEMPLO ilustrativo: reemplaza estos valores por los de tu pliego o norma",
+    "fuente": "Definida por el usuario (pliego de condiciones del contrato)",
+    "franja": {
+      "25.0": [100, 100],
+      "4.75": [35, 65],
+      "0.425": [10, 30],
+      "0.075": [5, 15]
+    },
+    "LL_max": 30,
+    "IP_max": 8
+  }
+]

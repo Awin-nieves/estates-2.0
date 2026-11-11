@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Entornos virtuales
+.venv/
+venv/
+
+# Herramientas
+.pytest_cache/
+.idea/
+.vscode/
+.DS_Store
+
+# Datos y reportes generados por la app (no son código fuente)
+granulometria.db
+/especificaciones_propias.json
+memorias/
+assets/curva_*.png
