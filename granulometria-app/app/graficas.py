@@ -47,6 +47,8 @@ def graficar_curva_granulometrica(curva, titulo="Curva granulométrica",
     for D, pasa, etiqueta in [(curva.D10, 10, "D10"),
                               (curva.D30, 30, "D30"),
                               (curva.D60, 60, "D60")]:
+        if D is None:       # el % que pasa no está en la curva: no aplica
+            continue
         ax.plot([D], [pasa], marker="s", color="tab:red", ms=6, zorder=5)
         ax.annotate(f"{etiqueta} = {D:.3f} mm", xy=(D, pasa),
                    xytext=desplazamientos[etiqueta],

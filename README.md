@@ -6,6 +6,13 @@ momento flector y flecha, y verifica esfuerzos y deflexión admisible.
 
 ![Diagramas de una viga continua de dos tramos](docs/img/viga_continua.png)
 
+> **Este repositorio contiene dos proyectos independientes:**
+>
+> | Proyecto | Carpeta | Qué hace |
+> |---|---|---|
+> | Vigas continuas | `estates/` (esta página) | Análisis por rigidez directa de vigas continuas |
+> | **Granulometría y clasificación de suelos (Proyecto 02, Programación II)** | [`granulometria-app/`](granulometria-app/) | Aplicación de escritorio (Flet) para granulometría, clasificación USCS/AASHTO, verificación de especificaciones INVIAS y memoria de cálculo en Word. Ver su [README](granulometria-app/README.md) |
+
 ## Background
 
 El proyecto reutiliza las expresiones matemáticas de `primitives.py` de
@@ -76,7 +83,10 @@ hacia abajo [kN] y M antihorario [kN·m].
 pytest
 ```
 
-Los 16 tests comparan el programa con soluciones analíticas:
+(Esto corre los tests de las vigas. Los de la aplicación de granulometría
+se corren desde su carpeta: `cd granulometria-app && pytest`.)
+
+Los 18 tests comparan el programa con soluciones analíticas:
 
 | Caso | Solución comprobada |
 |---|---|
@@ -112,6 +122,7 @@ estates-2.0/
 ├── examples/dos_tramos.py, tres_tramos.py
 ├── tests/
 ├── docs/img/
+├── granulometria-app/   # segundo proyecto: app de escritorio (ver su README)
 └── pyproject.toml
 ```
 

@@ -8,6 +8,7 @@ from docxtpl import DocxTemplate, InlineImage
 from docx.shared import Cm
 
 from .graficas import graficar_curva_granulometrica
+from .modelo import formatear_opcional
 
 RUTA_PLANTILLA = Path(__file__).resolve().parents[1] / "plantillas" / "memoria.docx"
 
@@ -71,11 +72,11 @@ def generar_memoria(resultado, proyecto, nombre_calculo, autor, fecha,
         "peso_fondo_g": f"{peso_fondo_g:g}",
         "tamices": filas_tamices,
         "grafica": imagen,
-        "D10": f"{curva.D10:.4f}",
-        "D30": f"{curva.D30:.4f}",
-        "D60": f"{curva.D60:.4f}",
-        "Cu": f"{curva.Cu:.2f}",
-        "Cc": f"{curva.Cc:.2f}",
+        "D10": formatear_opcional(curva.D10, 4),
+        "D30": formatear_opcional(curva.D30, 4),
+        "D60": formatear_opcional(curva.D60, 4),
+        "Cu": formatear_opcional(curva.Cu, 2),
+        "Cc": formatear_opcional(curva.Cc, 2),
         "pct_grava": f"{curva.pct_grava:.1f}",
         "pct_arena": f"{curva.pct_arena:.1f}",
         "pct_finos": f"{curva.pct_finos:.1f}",

@@ -14,6 +14,11 @@ automáticamente una memoria de cálculo en Word con la curva incluida.
 
 ![Formulario con resultados de clasificación y curva granulométrica](ejemplos/capturas/02_calculo_resultado.png)
 
+Suelo con 60 % de finos: D10, D30, Cu y Cc aparecen como "no aplica" y la
+clasificación continúa (CL, A-6):
+
+![Suelo fino](ejemplos/capturas/05_suelo_fino_no_aplica.png)
+
 ## Background
 
 El proyecto reutiliza y amplía el repositorio `estates-2.0` (análisis de
@@ -31,6 +36,28 @@ pruebas.
 | Verificación contra especificaciones (husos) | `app/especificaciones.py` |
 | Base de datos SQLite (2+ tablas relacionadas, CRUD, consultas parametrizadas) | `app/db.py` |
 | Memoria de cálculo en Word autogenerada (docxtpl, tabla con `{%tr for%}`, imagen embebida) | `app/reporte.py`, `plantillas/memoria.docx` |
+
+## Fundamento teórico
+
+- **Curva granulométrica:** con las masas retenidas se calcula el % retenido
+  acumulado (`np.cumsum`) y el % que pasa = 100 − % retenido acumulado.
+- **D10, D30, D60:** diámetro para el que pasa 10, 30 y 60 %. Se interpola
+  linealmente entre tamices en escala semilogarítmica (log₁₀ D vs. % que
+  pasa) con `scipy.interpolate`. Si el % buscado no está en la curva (p. ej.
+  D10 con 30 % de finos), no se extrapola: es "no aplica".
+- **Coeficientes:** Cu = D60 / D10 y Cc = D30² / (D10 · D60). Se usan en USCS
+  para suelos con ≤ 12 % de finos (bien graduado: grava Cu ≥ 4, arena Cu ≥ 6,
+  y 1 ≤ Cc ≤ 3).
+- **USCS (ASTM D2487):** ≥ 50 % de finos → limo o arcilla según la línea A
+  (PI = 0.73·(LL − 20)) y LL ≥ 50 (H) o < 50 (L); < 50 % → grava o arena
+  (G/S) con símbolo según finos (< 5 %: W/P; 5–12 %: símbolo doble; > 12 %:
+  M/C).
+- **AASHTO (M 145 / ASTM D3282):** grupos A-1 a A-7 según % que pasa los
+  tamices No.10, 40 y 200, LL e IP, con índice de grupo
+  GI = 0.2a + 0.005·a·c + 0.01·b·d, donde a = F200 − 35 (0 a 40),
+  b = F200 − 15 (0 a 40), c = LL − 40 (0 a 20) y d = IP − 10 (0 a 20).
+- **Especificaciones:** la curva cumple si en cada tamiz de la franja su %
+  que pasa está entre el mínimo y el máximo.
 
 ## Install
 
@@ -117,7 +144,7 @@ print(ver.cumple, [(f.tamiz, f.pasa, f.cumple) for f in ver.filas])
 pytest
 ```
 
-60 pruebas (`tests/`) comprueban el programa de forma independiente:
+81 pruebas (`tests/`) comprueban el programa de forma independiente:
 
 | Caso | Solución comprobada |
 |---|---|
@@ -125,7 +152,8 @@ pytest
 | D10, D30, D60 | Interpolación semilogarítmica ida y vuelta, y fórmula manual |
 | Cu, Cc | Fórmulas Cu = D60/D10, Cc = D30²/(D10·D60) |
 | Clasificación USCS | Casos límite GW, GP, SW, ML, CL, CH, MH y símbolo doble SP-SC |
-| Clasificación AASHTO | Casos A-1-a, A-4, A-7-6 (con índice de grupo positivo) |
+| Clasificación AASHTO | Casos A-1-a, A-4, A-7-6 (con índice de grupo positivo) y límites con decimales (LL = 40.5, IP = 10.5) |
+| Flujo completo con finos | Datos crudos de tamizado → SM, SC, ML, CL, CH, MH con su grupo AASHTO e índice de grupo; guardado, historial, gráfica y memoria Word |
 | Especificaciones | Cumple/no cumple por tamiz, LL/IP, relación No.200/No.40, interpolación semilog, tamiz sin dato, JSON propio válido e inválido, coherencia de las franjas incluidas |
 | Tramos planos de la curva | D10/D30/D60 correctos cuando un tamiz no retiene masa (% que pasa repetido) |
 | Base de datos | CRUD de proyectos y cálculos, borrado en cascada, búsqueda por nombre |
@@ -147,10 +175,16 @@ con LL = 25 % y LP = 18 % clasifica como **SP-SC** (USCS) y **A-2-4**
   programa no valida que el tamaño máximo de partícula sea compatible con
   el ensayo (p. ej. partículas mayores a 75 mm deberían excluirse antes del
   tamizado, según el estándar).
-- La interpolación para D10/D30/D60 requiere que el porcentaje buscado
-  esté dentro del rango efectivamente tamizado; si la curva no alcanza un
-  valor (p. ej. no hay datos por debajo del 10 % que pasa), el cálculo
-  lanza un error explicando qué faltó, en vez de extrapolar.
+- D10, D30 y D60 solo existen si la curva ensayada llega a ese % que pasa
+  (no se extrapola). En suelos con muchos finos, p. ej. 30 % o 60 % que
+  pasa el No.200, D10 (y a veces D30) no existen: la app los muestra como
+  **"no aplica"** y sigue clasificando, porque USCS solo usa Cu y Cc cuando
+  hay 12 % de finos o menos. Si hay entre 10 y 12 % de finos y D10 queda
+  por debajo del tamiz más fino, la app avisa que falta ampliar la curva
+  (hidrómetro), en vez de inventar una clasificación.
+- Los límites de AASHTO se aplican como LL > 40 e IP > 10 (en vez de los
+  enteros 41 y 11 de la tabla), para que valores con decimales caigan en el
+  grupo correcto.
 - La app se probó en modo escritorio (`flet run` / `python main.py`); el
   modo web (`ft.run(..., view=ft.WEB_BROWSER)`) funciona pero no es el modo
   de entrega esperado por el enunciado.
@@ -179,6 +213,27 @@ granulometria-app/
 ├── requirements.txt
 └── .gitignore
 ```
+
+## Referencias
+
+- ASTM D2487, *Standard Practice for Classification of Soils for Engineering
+  Purposes (Unified Soil Classification System)*.
+- AASHTO M 145 / ASTM D3282, *Classification of Soils and Soil-Aggregate
+  Mixtures for Highway Construction Purposes*.
+- ASTM E11, *Standard Specification for Woven Wire Test Sieve Cloth and Test
+  Sieves*.
+- INVIAS, *Especificaciones Generales de Construcción de Carreteras*, 2013,
+  Art. 320 (subbase granular) y Art. 330 (base granular).
+- EMCALI, norma NDC-SE-AA-012 (cimentación de tuberías de acueducto).
+- Das, B. M., *Fundamentos de ingeniería geotécnica*.
+
+## Autores
+
+Proyecto 02 — Programación II, Universidad Distrital Francisco José de
+Caldas, Ingeniería Civil (Semestre 2026-III).
+
+- Awin Nieves — (usuario de GitHub: `Awin-nieves`)
+- (nombre del segundo integrante — completar)
 
 ## Contribution
 

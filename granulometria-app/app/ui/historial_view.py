@@ -5,6 +5,7 @@ import asyncio
 import flet as ft
 
 from .. import servicio
+from ..modelo import formatear_opcional
 
 
 def build_historial_view(page: ft.Page, bd):
@@ -87,9 +88,11 @@ def build_historial_view(page: ft.Page, bd):
         dialogo = ft.AlertDialog(
             title=ft.Text(calculo.nombre),
             content=ft.Column(tight=True, controls=[
-                ft.Text(f"D10 = {c.D10:.4f} mm   D30 = {c.D30:.4f} mm   "
-                       f"D60 = {c.D60:.4f} mm"),
-                ft.Text(f"Cu = {c.Cu:.2f}   Cc = {c.Cc:.2f}"),
+                ft.Text(f"D10 = {formatear_opcional(c.D10, 4, ' mm')}   "
+                       f"D30 = {formatear_opcional(c.D30, 4, ' mm')}   "
+                       f"D60 = {formatear_opcional(c.D60, 4, ' mm')}"),
+                ft.Text(f"Cu = {formatear_opcional(c.Cu, 2)}   "
+                       f"Cc = {formatear_opcional(c.Cc, 2)}"),
                 ft.Text(f"Grava {c.pct_grava:.1f} % · Arena "
                        f"{c.pct_arena:.1f} % · Finos {c.pct_finos:.1f} %"),
                 ft.Text(f"USCS: {resultado.uscs_simbolo} — "

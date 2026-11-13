@@ -9,7 +9,7 @@ from pathlib import Path
 import flet as ft
 
 from .. import servicio
-from ..modelo import TAMICES_ASTM
+from ..modelo import TAMICES_ASTM, formatear_opcional
 
 _contador_imagenes = itertools.count()
 
@@ -261,9 +261,11 @@ def build_calculo_view(page: ft.Page, bd, carpeta_assets: Path):
         c = resultado.curva
         resultado_texto.controls = [
             ft.Text("Resultados", weight=ft.FontWeight.BOLD, size=16),
-            ft.Text(f"D10 = {c.D10:.4f} mm    D30 = {c.D30:.4f} mm    "
-                   f"D60 = {c.D60:.4f} mm"),
-            ft.Text(f"Cu = {c.Cu:.2f}      Cc = {c.Cc:.2f}"),
+            ft.Text(f"D10 = {formatear_opcional(c.D10, 4, ' mm')}    "
+                   f"D30 = {formatear_opcional(c.D30, 4, ' mm')}    "
+                   f"D60 = {formatear_opcional(c.D60, 4, ' mm')}"),
+            ft.Text(f"Cu = {formatear_opcional(c.Cu, 2)}      "
+                   f"Cc = {formatear_opcional(c.Cc, 2)}"),
             ft.Text(f"Grava: {c.pct_grava:.1f} %    Arena: "
                    f"{c.pct_arena:.1f} %    Finos: {c.pct_finos:.1f} %"),
             ft.Text(f"USCS: {resultado.uscs_simbolo} — "
@@ -351,7 +353,10 @@ def build_calculo_view(page: ft.Page, bd, carpeta_assets: Path):
         controls=[
             ft.Container(
                 padding=20,
+                expand=True,      # sin esto la columna no conoce el alto de
+                                  # la ventana y el scroll nunca se activa
                 content=ft.Column(scroll=ft.ScrollMode.AUTO, spacing=14,
+                    expand=True,
                     controls=[
                         ft.Row([proyecto_dd, crear_proyecto_btn,
                                nuevo_proyecto_tf]),

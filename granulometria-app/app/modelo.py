@@ -16,6 +16,7 @@ Convenciones:
       como se reportan en el ensayo de límites de Atterberg.
 """
 from dataclasses import dataclass, field
+from typing import Optional
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -61,22 +62,41 @@ class CurvaGranulometrica:
         pasa: % que pasa acumulado, en el mismo orden.
         masa_total_g: masa total de la muestra (suma de retenidos + fondo).
         D10, D30, D60: diámetros interpolados [mm] para 10 %, 30 % y 60 %
-            que pasa.
-        Cu: coeficiente de uniformidad D60/D10.
-        Cc: coeficiente de curvatura D30²/(D10·D60).
+            que pasa. Son ``None`` ("no aplica") cuando ese % que pasa
+            queda fuera del rango ensayado; típico de suelos con mucho
+            fino: si pasa más de 10 % por el tamiz más fino (No.200),
+            D10 no existe en la curva.
+        Cu: coeficiente de uniformidad D60/D10 (``None`` si falta D10 o D60).
+        Cc: coeficiente de curvatura D30²/(D10·D60) (``None`` si falta
+            alguno de los tres diámetros).
         pct_grava, pct_arena, pct_finos: fracciones del suelo [%].
     """
     abertura_mm: np.ndarray
     pasa: np.ndarray
     masa_total_g: float
-    D10: float
-    D30: float
-    D60: float
-    Cu: float
-    Cc: float
+    D10: Optional[float]
+    D30: Optional[float]
+    D60: Optional[float]
+    Cu: Optional[float]
+    Cc: Optional[float]
     pct_grava: float
     pct_arena: float
     pct_finos: float
+
+
+def _diametro_o_none(abertura_mm, pasa, pasa_objetivo):
+    """Como :func:`interpolar_diametro`, pero devuelve ``None`` en vez de
+    lanzar error cuando el % que pasa buscado está fuera de la curva."""
+    try:
+        return interpolar_diametro(abertura_mm, pasa, pasa_objetivo)
+    except ValueError:
+        return None
+
+
+def formatear_opcional(valor, decimales=4, unidad=""):
+    """Texto de un valor que puede ser ``None``: ``"no aplica"`` o el
+    número con ``decimales`` (y ``unidad`` opcional, p. ej. " mm")."""
+    return "no aplica" if valor is None else f"{valor:.{decimales}f}{unidad}"
 
 
 def calcular_curva(tamices, peso_fondo_g=0.0):
@@ -119,11 +139,16 @@ def calcular_curva(tamices, peso_fondo_g=0.0):
     pct_retenido_acum = retenido_acum_desc / masa_total * 100.0
     pasa = 100.0 - pct_retenido_acum
 
-    D10 = interpolar_diametro(abertura, pasa, 10.0)
-    D30 = interpolar_diametro(abertura, pasa, 30.0)
-    D60 = interpolar_diametro(abertura, pasa, 60.0)
-    Cu = D60 / D10
-    Cc = D30**2 / (D10 * D60)
+    # D10/D30/D60 solo existen si la curva ensayada llega a ese % que pasa.
+    # Un suelo con 40 % de finos, por ejemplo, no tiene D10 ni D30: eso no
+    # es un error del ensayo, simplemente "no aplica" (y USCS solo usa
+    # Cu y Cc cuando los finos son <= 12 %).
+    D10 = _diametro_o_none(abertura, pasa, 10.0)
+    D30 = _diametro_o_none(abertura, pasa, 30.0)
+    D60 = _diametro_o_none(abertura, pasa, 60.0)
+    Cu = D60 / D10 if D10 is not None and D60 is not None else None
+    Cc = (D30**2 / (D10 * D60)
+          if None not in (D10, D30, D60) else None)
 
     pasa_no4 = interpolar_pasa(abertura, pasa, ABERTURA_NO4)
     pasa_no200 = interpolar_pasa(abertura, pasa, ABERTURA_NO200)
@@ -276,13 +301,10 @@ def clasificar_uscs(curva, atterberg=None):
     # ---- Suelo de grano grueso: Grava o arena --------------------------
     prefijo = "G" if curva.pct_grava >= curva.pct_arena else "S"
     cu_min, cc_lo, cc_hi = (4, 1, 3) if prefijo == "G" else (6, 1, 3)
-    bien_graduado = curva.Cu >= cu_min and cc_lo <= curva.Cc <= cc_hi
-
-    if F < 5:
-        simbolo = f"{prefijo}{'W' if bien_graduado else 'P'}"
-        return simbolo, _desc_uscs(simbolo)
 
     if F > 12:
+        # Con más de 12 % de finos la gradación no interviene: solo
+        # importa el tipo de finos (M o C) según Atterberg.
         if atterberg is None:
             raise ValueError("Con % de finos > 12 se necesitan los "
                              "límites de Atterberg (LL, LP) para "
@@ -294,6 +316,19 @@ def clasificar_uscs(curva, atterberg=None):
             simbolo = f"{prefijo}C"
         else:
             simbolo = f"{prefijo}C-{prefijo}M"
+        return simbolo, _desc_uscs(simbolo)
+
+    # F <= 12 %: la gradación (Cu, Cc) sí interviene.
+    if curva.Cu is None or curva.Cc is None:
+        raise ValueError(
+            "Con % de finos <= 12 la clasificación USCS necesita Cu y Cc, "
+            "pero D10, D30 o D60 quedan fuera de la curva ensayada (p. ej. "
+            "D10 por debajo del tamiz más fino). Agrega tamices o una "
+            "curva extendida (hidrómetro) para poder calcularlos.")
+    bien_graduado = curva.Cu >= cu_min and cc_lo <= curva.Cc <= cc_hi
+
+    if F < 5:
+        simbolo = f"{prefijo}{'W' if bien_graduado else 'P'}"
         return simbolo, _desc_uscs(simbolo)
 
     # 5 % <= F <= 12 %: símbolo doble (gradación + tipo de finos)
@@ -382,22 +417,25 @@ def clasificar_aashto(curva, atterberg):
             grupo = "A-1-a"
         elif pasa40 <= 50 and pasa200 <= 25 and PI <= 6:
             grupo = "A-1-b"
-        elif pasa40 >= 51 and pasa200 <= 10 and PI <= 0.1:
+        elif pasa40 > 50 and pasa200 <= 10 and PI <= 0.1:
             grupo = "A-3"
+        # Los límites de la norma son "LL máx. 40 / mín. 41" e "IP máx. 10 /
+        # mín. 11" pensando en enteros; con decimales (LL = 40.5, IP = 10.5)
+        # se usan los cortes continuos LL > 40 e IP > 10.
         elif LL <= 40 and PI <= 10:
             grupo = "A-2-4"
-        elif LL >= 41 and PI <= 10:
+        elif LL > 40 and PI <= 10:
             grupo = "A-2-5"
-        elif LL <= 40 and PI >= 11:
+        elif LL <= 40 and PI > 10:
             grupo = "A-2-6"
         else:
             grupo = "A-2-7"
     else:                                               # ---- Limo-arcilla
         if LL <= 40 and PI <= 10:
             grupo = "A-4"
-        elif LL >= 41 and PI <= 10:
+        elif LL > 40 and PI <= 10:
             grupo = "A-5"
-        elif LL <= 40 and PI >= 11:
+        elif LL <= 40 and PI > 10:
             grupo = "A-6"
         else:
             grupo = "A-7-5" if PI <= LL - 30 else "A-7-6"
